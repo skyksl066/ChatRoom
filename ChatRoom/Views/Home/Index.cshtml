@@ -1,33 +1,143 @@
 ﻿@{
     ViewData["Title"] = "Home Page";
 }
+<h3 class="text-center">Messaging</h3>
 
-<div class="container">
-    <div class="row">&nbsp;</div>
-    <div class="row">
-        <div class="col-2">User</div>
-        <div class="col-4"><input type="text" id="userInput" /></div>
-    </div>
-    <div class="row">
-        <div class="col-2">Message</div>
-        <div class="col-4"><input type="text" id="messageInput" /></div>
-    </div>
-    <div class="row">&nbsp;</div>
-    <div class="row">
-        <div class="col-6">
-            <input type="button" id="sendButton" value="Send Message" />
+<div class="messaging">
+    <div class="inbox_msg">
+        <div class="inbox_people">
+            <div class="headind_srch">
+                <div class="recent_heading">
+                    <h4>Recent</h4>
+                </div>
+                <div class="srch_bar">
+                    <div class="stylish-input-group">
+                        <input type="text" class="search-bar" placeholder="Search">
+                        <span class="input-group-addon">
+                            <button type="button" id="Btn_Search"><i class="fa fa-search" aria-hidden="true"></i></button>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="inbox_chat">
+                <div class="chat_list active_chat">
+                    <div class="chat_people">
+                        <div class="chat_img"> <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil"> </div>
+                        <div class="chat_ib">
+                            <h5>Sunil Rajput <span class="chat_date">Dec 25</span></h5>
+                            <p>
+                                Test, which is a new approach to have all solutions
+                                astrology under one roof.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat_list">
+                    <div class="chat_people">
+                        <div class="chat_img"> <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil"> </div>
+                        <div class="chat_ib">
+                            <h5>Sunil Rajput <span class="chat_date">Dec 25</span></h5>
+                            <p>
+                                Test, which is a new approach to have all solutions
+                                astrology under one roof.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat_list">
+                    <div class="chat_people">
+                        <div class="chat_img"> <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil"> </div>
+                        <div class="chat_ib">
+                            <h5>Sunil Rajput <span class="chat_date">Dec 25</span></h5>
+                            <p>
+                                Test, which is a new approach to have all solutions
+                                astrology under one roof.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="mesgs">
+            <div class="msg_history"></div>
+            <div class="type_msg">
+                <div class="input_msg_write">
+                    <input type="text" class="write_msg" placeholder="Type a message" />
+                    <button class="msg_send_btn" type="button"><i class="fa fa-paper-plane-o" aria-hidden="true"></i></button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
-<div class="row">
-    <div class="col-12">
-        <hr />
-    </div>
-</div>
-<div class="row">
-    <div class="col-6">
-        <ul id="messagesList"></ul>
-    </div>
-</div>
+
 <script src="~/js/signalr/dist/browser/signalr.js"></script>
-<script src="~/js/chat.js"></script>
+@*<script src="~/js/chat.js"></script>*@
+@section Scripts{
+    <script>
+        $(document).ready(function () {
+            const connection = new signalR.HubConnectionBuilder().withUrl("/chatHub").build();
+            let userInfo;
+            connection.start().then(function () {
+                //TODO
+            }).catch(function (err) {
+                return console.error(err.toString());
+            });
+
+            $('.msg_send_btn').on('click', function () {
+                let user = userInfo.name;
+                let message = $('.write_msg').val();
+                connection.invoke("SendMessage", user, message).then(function () {
+                    $('.msg_history').append(`<div class="outgoing_msg">
+                            <div class= "sent_msg">
+                                <p>${message}</p>
+                                <span class="time_date">${new Date().toLocaleString()}</span>
+                            </div>
+                        </div>`);
+                    $('.write_msg').val('');
+                }).catch(function (err) {
+                    return console.error(err.toString());
+                });
+            });
+
+            connection.on("ReceiveMessage", function (user, message) {
+                if (user != userInfo.name) {
+                    $('.msg_history').append(`<div class="incoming_msg">
+                            <div class="incoming_msg_img">
+                                <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil">
+                            </div>
+                            <div class="received_msg">
+                                <div class="received_withd_msg">
+                                    <p>${message}</p>
+                                    <span class="time_date">${new Date().toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>`);
+                }
+            });
+
+            if (localStorage.getItem('userInfo') == null) {
+                let name = prompt('Please enter your name');
+                userInfo = { name: name };
+                localStorage.setItem('userInfo', JSON.stringify(userInfo));
+            } else {
+                userInfo = JSON.parse(localStorage.getItem('userInfo'));
+            }
+
+            $('.chat_list').on('click', function () {
+                $('.chat_list').removeClass('active_chat');
+                $(this).toggleClass('active_chat');
+            });
+
+            $('.search-bar').on('keyup', function () {
+                let input = $('.search-bar').val();
+                $.each($('.chat_ib'), function (index, element) {
+                    if (element.innerHTML.indexOf(input) > -1) {
+                        $(element).parents('.chat_list').show();
+                    } else {
+                        $(element).parents('.chat_list').hide();
+                    }
+                });
+            });
+        });
+    </script>
+}

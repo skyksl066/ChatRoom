@@ -94,6 +94,7 @@
                             </div>
                         </div>`);
                     $('.write_msg').val('');
+                    $('.msg_history').animate({ scrollTop: $('.msg_history').prop("scrollHeight") }, 400);
                 }).catch(function (err) {
                     return console.error(err.toString());
                 });
@@ -102,16 +103,17 @@
             connection.on("ReceiveMessage", function (user, message) {
                 if (user != userInfo.name) {
                     $('.msg_history').append(`<div class="incoming_msg">
-                            <div class="incoming_msg_img">
-                                <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil">
+                        <div class="incoming_msg_img">
+                            <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil">
+                        </div>
+                        <div class="received_msg">
+                            <div class="received_withd_msg">
+                                <p>${message}</p>
+                                <span class="time_date">${new Date().toLocaleString()}</span>
                             </div>
-                            <div class="received_msg">
-                                <div class="received_withd_msg">
-                                    <p>${message}</p>
-                                    <span class="time_date">${new Date().toLocaleString()}</span>
-                                </div>
-                            </div>
-                        </div>`);
+                        </div>
+                    </div>`);
+                    $('.msg_history').animate({ scrollTop: $('.msg_history').prop("scrollHeight") }, 400);
                 }
             });
 

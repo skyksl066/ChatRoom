@@ -1,7 +1,7 @@
 # ASP.NET-Core-ChatRoom
 This project is a websocket example with SignalR.
 
-- Framework .NET 5.0
+- Framework .NET Core 3.1
 - Microsoft.AspNet.SignalR 2.4.3
 - Microsoft.AspNet.SignalR.Client 2.4.3
 

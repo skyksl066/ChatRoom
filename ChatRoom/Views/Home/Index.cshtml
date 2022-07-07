@@ -20,7 +20,7 @@
                 </div>
             </div>
             <div class="inbox_chat">
-                <div class="chat_list active_chat">
+                @*<div class="chat_list active_chat">
                     <div class="chat_people">
                         <div class="chat_img"> <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil"> </div>
                         <div class="chat_ib">
@@ -55,7 +55,7 @@
                             </p>
                         </div>
                     </div>
-                </div>
+                </div>*@
             </div>
         </div>
         <div class="mesgs">
@@ -76,44 +76,132 @@
     <script>
         $(document).ready(function () {
             const connection = new signalR.HubConnectionBuilder().withUrl("/chatHub").build();
+            let receivedMsg = {};
             let userInfo;
+            const outgoingMsg = (message, date) => {
+                return `<div class="outgoing_msg">
+                    <div class= "sent_msg">
+                        <p>${message}</p>
+                        <span class="time_date">${date.toLocaleString()}</span>
+                    </div>
+                </div>`;
+            };
+            const incomingMsg = (message, date) => {
+                return `<div class="incoming_msg">
+                    <div class="incoming_msg_img">
+                        <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil">
+                    </div>
+                    <div class="received_msg">
+                        <div class="received_withd_msg">
+                            <p>${message}</p>
+                            <span class="time_date">${date.toLocaleString()}</span>
+                        </div>
+                    </div>
+                </div>`;
+            };
+            const messageTo = () => {
+                let to = $('.chat_list.active_chat').data('id');
+                let message = $('.write_msg').val();
+                connection.invoke("MessageTo", [to], message).then(function () {
+                    $('.msg_history').append(outgoingMsg(message, new Date()));
+                    $('.write_msg').val('');
+                    $('.msg_history').animate({ scrollTop: $('.msg_history').prop("scrollHeight") }, 400);
+                    if (receivedMsg[to] == null) {
+                        receivedMsg[to] = [];
+                        receivedMsg[to].push({ id: userInfo.ClientId, message: message, date: new Date() });
+                    } else {
+                        receivedMsg[to].push({ id: userInfo.ClientId, message: message, date: new Date() });
+                    }
+                }).catch(function (err) {
+                    return console.error(err.toString());
+                });
+            }
+            //連線到 SignalR 伺服器
             connection.start().then(function () {
-                //TODO
+                connection.invoke('GetOnlineList').catch(function (err) {
+                    return console.error(err.toString());
+                });
             }).catch(function (err) {
                 return console.error(err.toString());
             });
 
-            $('.msg_send_btn').on('click', function () {
-                let user = userInfo.name;
-                let message = $('.write_msg').val();
-                connection.invoke("SendMessage", user, message).then(function () {
-                    $('.msg_history').append(`<div class="outgoing_msg">
-                            <div class= "sent_msg">
-                                <p>${message}</p>
-                                <span class="time_date">${new Date().toLocaleString()}</span>
+            // 再線使用者清單
+            connection.on('onlineList', function (loggedInfos) {
+                console.log(loggedInfos)
+                let temp = '';
+                loggedInfos.forEach(item => {
+                    if (item.userName == null
+                        || item.connectionId == userInfo.ClientId
+                        || $(`[data-id="${item.connectionId}"].chat_list`).length > 0) return;
+                    temp += `<div class="chat_list" data-id="${item.connectionId}">
+                        <div class="chat_people">
+                            <div class="chat_img">
+                                <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil">
                             </div>
-                        </div>`);
-                    $('.write_msg').val('');
-                    $('.msg_history').animate({ scrollTop: $('.msg_history').prop("scrollHeight") }, 400);
-                }).catch(function (err) {
+                            <div class="chat_ib">
+                                <h5>${item.userName} <span class="chat_date">${item.lastRequest}</span></h5>
+                            </div>
+                        </div>
+                    </div>`;
+                });
+                $('.inbox_chat').append(temp);
+            });
+
+            // 當有使用者登入
+            connection.on('onUserLogin', function (loggedInfos) {
+                console.log(loggedInfos)
+                connection.invoke('GetOnlineList').catch(function (err) {
+                    return console.error(err.toString());
+                });
+                if ($('.chat_list.active_chat').length == 0) {
+                    $('.msg_send_btn').prop('disabled', true);
+                }
+            });
+
+            // 當有使用者離線
+            connection.on('onUserLoginOut', function (loggedInfos) {
+                $(`[data-id="${loggedInfos.connectionId}"].chat_list`).remove();
+                connection.invoke('GetOnlineList').catch(function (err) {
                     return console.error(err.toString());
                 });
             });
 
-            connection.on("ReceiveMessage", function (user, message) {
-                if (user != userInfo.name) {
-                    $('.msg_history').append(`<div class="incoming_msg">
-                        <div class="incoming_msg_img">
-                            <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil">
-                        </div>
-                        <div class="received_msg">
-                            <div class="received_withd_msg">
-                                <p>${message}</p>
-                                <span class="time_date">${new Date().toLocaleString()}</span>
-                            </div>
-                        </div>
-                    </div>`);
+            // 回報使用者資訊
+            connection.on('getLoginInfo', function (ClientId) {
+                userInfo.ClientId = ClientId;
+                connection.invoke('Login', userInfo.name).catch(function (err) {
+                    return console.error(err.toString());
+                });
+            });
+
+            // 送出訊息
+            $(document).on('click', '.msg_send_btn', function (e) {
+                messageTo();
+            });
+            $(document).on('keyup', '.write_msg', function (e) {
+                if (e.keyCode != 13) return;
+                messageTo();
+            });
+
+            // 當收到訊息
+            connection.on("showMessage", function (from, message) {
+                console.log(from, message)
+                if (receivedMsg[from] == null) {
+                    receivedMsg[from] = [];
+                    receivedMsg[from].push({ id: from, message: message, date: new Date() });
+                } else {
+                    receivedMsg[from].push({ id: from, message: message, date: new Date() });
+                }
+                if (from == $('.chat_list.active_chat').data('id')) {
+                    $('.msg_history').append(incomingMsg(message, new Date()));
                     $('.msg_history').animate({ scrollTop: $('.msg_history').prop("scrollHeight") }, 400);
+                } else {
+                    let chat_list = $(`[data-id="${from}"].chat_list`);
+                    if (chat_list.find('.chat_ib p').length == 0) {
+                        chat_list.find('.chat_ib').append(`<p>${message}</p>`);
+                    } else {
+                        chat_list.find('.chat_ib p').text(message);
+                    }
                 }
             });
 
@@ -125,7 +213,20 @@
                 userInfo = JSON.parse(localStorage.getItem('userInfo'));
             }
 
-            $('.chat_list').on('click', function () {
+            // 選取使用者清單
+            $(document).on('click', '.chat_list', function () {
+                $('.msg_history').empty();
+                $('.msg_send_btn').prop('disabled', false);
+                if (typeof receivedMsg[$(this).data('id')] != 'undefined') {
+                    receivedMsg[$(this).data('id')].forEach(item => {
+                        if (item.id == userInfo.ClientId) {
+                            $('.msg_history').append(outgoingMsg(item.message, item.date));
+                        } else {
+                            $('.msg_history').append(incomingMsg(item.message, item.date));
+                        }
+                        console.log(item)
+                    });
+                }
                 $('.chat_list').removeClass('active_chat');
                 $(this).toggleClass('active_chat');
             });

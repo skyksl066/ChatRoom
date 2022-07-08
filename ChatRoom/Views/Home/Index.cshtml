@@ -25,37 +25,40 @@
                         <div class="chat_img"> <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil"> </div>
                         <div class="chat_ib">
                             <h5>Sunil Rajput <span class="chat_date">Dec 25</span></h5>
-                            <p>
-                                Test, which is a new approach to have all solutions
-                                astrology under one roof.
-                            </p>
+                            <div>
+                                <p class="chat_received">
+                                    Test, which is a new approach to have all solutions
+                                    astrology under one roof.
+                                </p>
+                                <p class="badge badge-success badge-pill">999</p>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="chat_list">
-                    <div class="chat_people">
-                        <div class="chat_img"> <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil"> </div>
-                        <div class="chat_ib">
-                            <h5>Sunil Rajput <span class="chat_date">Dec 25</span></h5>
-                            <p>
-                                Test, which is a new approach to have all solutions
-                                astrology under one roof.
-                            </p>
-                        </div>
-                    </div>
+            <div class="chat_people">
+                <div class="chat_img"> <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil"> </div>
+                <div class="chat_ib">
+                    <h5>Sunil Rajput <span class="chat_date">Dec 25</span></h5>
+                    <p>
+                        Test, which is a new approach to have all solutions
+                        astrology under one roof.
+                    </p>
                 </div>
-                <div class="chat_list">
-                    <div class="chat_people">
-                        <div class="chat_img"> <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil"> </div>
-                        <div class="chat_ib">
-                            <h5>Sunil Rajput <span class="chat_date">Dec 25</span></h5>
-                            <p>
-                                Test, which is a new approach to have all solutions
-                                astrology under one roof.
-                            </p>
-                        </div>
-                    </div>
-                </div>*@
+            </div>
+        </div>
+        <div class="chat_list">
+            <div class="chat_people">
+                <div class="chat_img"> <img src="https://ptetutorials.com/images/user-profile.png" alt="sunil"> </div>
+                <div class="chat_ib">
+                    <h5>Sunil Rajput <span class="chat_date">Dec 25</span></h5>
+                    <p>
+                        Test, which is a new approach to have all solutions
+                        astrology under one roof.
+                    </p>
+                </div>
+            </div>
+        </div>*@
             </div>
         </div>
         <div class="mesgs">
@@ -108,9 +111,9 @@
                     $('.msg_history').animate({ scrollTop: $('.msg_history').prop("scrollHeight") }, 400);
                     if (receivedMsg[to] == null) {
                         receivedMsg[to] = [];
-                        receivedMsg[to].push({ id: userInfo.ClientId, message: message, date: new Date() });
+                        receivedMsg[to].push({ id: userInfo.ClientId, message: message, date: new Date(), readed: true });
                     } else {
-                        receivedMsg[to].push({ id: userInfo.ClientId, message: message, date: new Date() });
+                        receivedMsg[to].push({ id: userInfo.ClientId, message: message, date: new Date(), readed: true });
                     }
                 }).catch(function (err) {
                     return console.error(err.toString());
@@ -188,19 +191,23 @@
                 console.log(from, message)
                 if (receivedMsg[from] == null) {
                     receivedMsg[from] = [];
-                    receivedMsg[from].push({ id: from, message: message, date: new Date() });
+                    receivedMsg[from].push({ id: from, message: message, date: new Date(), readed: false });
                 } else {
-                    receivedMsg[from].push({ id: from, message: message, date: new Date() });
+                    receivedMsg[from].push({ id: from, message: message, date: new Date(), readed: false });
                 }
                 if (from == $('.chat_list.active_chat').data('id')) {
                     $('.msg_history').append(incomingMsg(message, new Date()));
                     $('.msg_history').animate({ scrollTop: $('.msg_history').prop("scrollHeight") }, 400);
                 } else {
                     let chat_list = $(`[data-id="${from}"].chat_list`);
-                    if (chat_list.find('.chat_ib p').length == 0) {
-                        chat_list.find('.chat_ib').append(`<p>${message}</p>`);
+                    if (chat_list.find('.chat_ib div').length == 0) {
+                        chat_list.find('.chat_ib').append(`<div>
+                            <p class="chat_received">${message}</p>
+                            <p class="badge badge-success badge-pill">1</p>
+                        </div>`);
                     } else {
-                        chat_list.find('.chat_ib p').text(message);
+                        chat_list.find('.chat_ib .chat_received').text(message);
+                        chat_list.find('.chat_ib .badge').text(receivedMsg[from].filter(x => x.readed === false).length);
                     }
                 }
             });
@@ -217,15 +224,20 @@
             $(document).on('click', '.chat_list', function () {
                 $('.msg_history').empty();
                 $('.msg_send_btn').prop('disabled', false);
-                if (typeof receivedMsg[$(this).data('id')] != 'undefined') {
+                let id = $(this).data('id');
+                if (typeof receivedMsg[id] != 'undefined') {
                     receivedMsg[$(this).data('id')].forEach(item => {
                         if (item.id == userInfo.ClientId) {
                             $('.msg_history').append(outgoingMsg(item.message, item.date));
                         } else {
                             $('.msg_history').append(incomingMsg(item.message, item.date));
                         }
+                        item.readed = true;
                         console.log(item)
                     });
+                    let chat_list = $(`[data-id="${id}"].chat_list`);
+                    let len = receivedMsg[id].filter(x => x.readed === false).length;
+                    chat_list.find('.chat_ib .badge').text(len == 0 ? '' : len);
                 }
                 $('.chat_list').removeClass('active_chat');
                 $(this).toggleClass('active_chat');

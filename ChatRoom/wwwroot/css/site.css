@@ -157,8 +157,15 @@ img {
 
 .chat_ib p {
     font-size: 14px;
+    margin: auto;
+}
+.chat_ib .badge {
+    float: right;
+}
+.chat_received {
+    width: 87%;
+    float: left;
     color: #989898;
-    margin: auto
 }
 
 .chat_img {
